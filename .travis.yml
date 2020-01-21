@@ -57,5 +57,5 @@ deploy:
     skip_cleanup: true
     script: make travis-release
     on:
-      repo: KohlsTechnology/eunomia
+      repo: karolkrawczyk/eunomia
       tags: true
