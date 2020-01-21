@@ -23,7 +23,7 @@ git -C "$GITHUB_PAGES_DIR" clone -b "$GITHUB_PAGES_BRANCH" "https://github.com/$
 
 # build
 
-export HELM_HOME=$(pwd)
+# export HELM_HOME=$(pwd)
 helm init --client-only
 version=${TRAVIS_TAG} envsubst < "$HELM_CHARTS_SOURCE"/Chart.yaml.tpl  > "$HELM_CHARTS_SOURCE"/Chart.yaml
 helm lint "$HELM_CHARTS_SOURCE"
