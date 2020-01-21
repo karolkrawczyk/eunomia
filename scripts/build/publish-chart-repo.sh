@@ -19,7 +19,7 @@ set -euxo pipefail
 # checkout
 
 mkdir -p "$GITHUB_PAGES_DIR"
-git -C "$GITHUB_PAGES_DIR" clone -b "$GITHUB_PAGES_BRANCH" "git@github.com:$GITHUB_PAGES_REPO.git" .
+git -C "$GITHUB_PAGES_DIR" clone -b "$GITHUB_PAGES_BRANCH" "https://github.com/$GITHUB_PAGES_REPO.git" .
 
 # build
 
