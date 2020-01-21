@@ -96,4 +96,4 @@ publish-chart-repo:
 	./scripts/build/publish-chart-repo.sh
 
 .PHONY: travis-release
-travis-release: travis-deploy-images publish-chart-repo
+travis-release: publish-chart-repo
