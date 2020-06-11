@@ -108,8 +108,8 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request, reconciler gitopscon
 						continue
 					}
 				}
-				//log.Info("payload validated")
-				//log.Info("creating job")
+				log.Info("payload validated")
+				log.Info("creating job")
 				gitopsconfig.PushEvents <- k8sevent.GenericEvent{
 					Meta:   instance.GetObjectMeta(),
 					Object: instance.DeepCopyObject(),

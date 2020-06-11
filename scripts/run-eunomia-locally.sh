@@ -31,5 +31,7 @@ kubectl apply -f ./deploy/crds/eunomia.kohls.io_gitopsconfigs_crd.yaml
 export JOB_TEMPLATE=./build/job-templates/job.yaml
 export CRONJOB_TEMPLATE=./build/job-templates/cronjob.yaml
 export OPERATOR_NAME=eunomia-operator
+kubectl apply -f examples/hello-world-yaml/eunomia-runner-sa.yaml
+#kubectl create secret generic template-gitconfig --from-file=.gitconfig=/Users/kakrawcz/Projects/magisterka-v2/.gitconfig --from-file=.git-credentials=/Users/kakrawcz/Projects/magisterka-v2/.git-credentials
 go mod vendor
-operator-sdk up local --namespace="${watch_ns}"
+/Users/kakrawcz/Projects/eunomia/operator-sdk up local --namespace="${watch_ns}"

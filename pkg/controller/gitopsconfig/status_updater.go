@@ -96,6 +96,7 @@ func (u *statusUpdater) OnUpdate(oldObj, newObj interface{}) {
 	case newJob.Status.Succeeded == 1:
 		status.State = "Success"
 	case newJob.Status.Succeeded == 0 && newJob.Status.Failed > 0:
+		log.Info("status updater")
 		status.State = "Failure"
 	}
 

@@ -14,4 +14,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: eunomia-runner-yaml
-  namespace: eunomia-hello-world-yaml-demo
+  namespace: default

@@ -17,7 +17,10 @@ limitations under the License.
 package gitopsconfig
 
 import (
+	"context"
 	"fmt"
+	"github.com/KohlsTechnology/eunomia/pkg/util"
+	"strconv"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -38,6 +41,7 @@ import (
 // associated resources.
 func addJobWatch(kubecfg *rest.Config, handler cache.ResourceEventHandler) (func(), error) {
 	// based on: http://web.archive.org/web/20161221032701/https://solinea.com/blog/tapping-kubernetes-events
+	log.Info("INSIDE JOB WATCH HERE")
 	clientset, err := kubernetes.NewForConfig(kubecfg)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create Job watcher from config: %w", err)
@@ -79,7 +83,6 @@ func (e *jobCompletionEmitter) OnDelete(oldObj interface{}) { e.OnUpdate(oldObj,
 // except for the last one being:
 //  - have .Status.Succeeded == 0 and .Status.Failed > 0.
 func (e *jobCompletionEmitter) OnUpdate(oldObj, newObj interface{}) {
-	// Extract Job objects from arguments
 	oldJob, ok := oldObj.(*batchv1.Job)
 	if !ok && oldObj != nil {
 		log.Error(nil, "non-Job object passed to jobCompletionEmitter", "oldObj", oldObj, "newObj", newObj)
@@ -90,13 +93,12 @@ func (e *jobCompletionEmitter) OnUpdate(oldObj, newObj interface{}) {
 		log.Error(nil, "non-Job object passed to jobCompletionEmitter", "oldObj", oldObj, "newObj", newObj)
 		return
 	}
+	log.Info("NEWJOB name: " + newJob.Name)
 
 	// Check some preconditions that can let us quickly ignore the Job change.
 	switch {
 	case newJob == nil:
 		return // Job deletion event - no need to check for completion.
-	case newJob.Status.Active > 0:
-		return // The Job is not completed yet, don't emit any events.
 	case oldJob != nil &&
 		oldJob.Status.Active == 0 &&
 		oldJob.Status.Succeeded+oldJob.Status.Failed >= 1:
@@ -130,7 +132,21 @@ func (e *jobCompletionEmitter) OnUpdate(oldObj, newObj interface{}) {
 	annotation := map[string]string{
 		"job": newJob.GetName(),
 	}
+
 	status := newJob.Status
+	log.Info("newJob NAME" + newJob.GetName())
+	log.Info("BEFORE SWITCH CASE SUCCEEDED")
+	log.Info("STATUS.SUCCEDED: " + strconv.Itoa(int(status.Succeeded)))
+	log.Info("STATUS.Failed: " + strconv.Itoa(int(status.Failed)))
+	log.Info("newJob info", "newJob", newJob)
+	log.Info("gitops info", "gitops", gitops)
+	log.Info("gitops spec", "spec", gitops.Spec)
+	err := e.client.Get(context.TODO(), util.NN{Name: gitopsName, Namespace: newJob.GetNamespace()}, gitops)
+	if err != nil {
+		log.Error(err, "cannot get GitOpsConfig")
+		return
+	}
+
 	switch {
 	case status.Succeeded == 1:
 		// Some Pods may have failed initially because of intermittent issues,
@@ -138,7 +154,16 @@ func (e *jobCompletionEmitter) OnUpdate(oldObj, newObj interface{}) {
 		e.eventRecorder.AnnotatedEventf(gitops, annotation, "Normal", "JobSuccessful",
 			"Job finished successfully: %s", newJob.GetName())
 	case status.Succeeded == 0 && status.Failed > 0:
-		e.eventRecorder.AnnotatedEventf(gitops, annotation, "Warning", "JobFailed",
-			"Job failed: %s", newJob.GetName())
+		log.Info("\n\n\n JOB FAILED for some reason ---- >>>> return to the previous state of git.\n\n\n")
+		log.Info("newJob failed", newJob)
+		result, err := UpdateRepo(gitops)
+
+		if err == nil {
+			log.Info("Due to error")
+		}
+		if !result {
+			e.eventRecorder.AnnotatedEventf(gitops, annotation, "Warning", "JobFailed",
+				"Job failed: %s", newJob.GetName())
+		}
 	}
 }
