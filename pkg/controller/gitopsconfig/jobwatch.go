@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/KohlsTechnology/eunomia/pkg/util"
-	"strconv"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -134,19 +133,6 @@ func (e *jobCompletionEmitter) OnUpdate(oldObj, newObj interface{}) {
 	}
 
 	status := newJob.Status
-	log.Info("newJob NAME" + newJob.GetName())
-	log.Info("BEFORE SWITCH CASE SUCCEEDED")
-	log.Info("STATUS.SUCCEDED: " + strconv.Itoa(int(status.Succeeded)))
-	log.Info("STATUS.Failed: " + strconv.Itoa(int(status.Failed)))
-	log.Info("newJob info", "newJob", newJob)
-	log.Info("gitops info", "gitops", gitops)
-	log.Info("gitops spec", "spec", gitops.Spec)
-	err := e.client.Get(context.TODO(), util.NN{Name: gitopsName, Namespace: newJob.GetNamespace()}, gitops)
-	if err != nil {
-		log.Error(err, "cannot get GitOpsConfig")
-		return
-	}
-
 	switch {
 	case status.Succeeded == 1:
 		// Some Pods may have failed initially because of intermittent issues,
@@ -154,9 +140,14 @@ func (e *jobCompletionEmitter) OnUpdate(oldObj, newObj interface{}) {
 		e.eventRecorder.AnnotatedEventf(gitops, annotation, "Normal", "JobSuccessful",
 			"Job finished successfully: %s", newJob.GetName())
 	case status.Succeeded == 0 && status.Failed > 0:
-		log.Info("\n\n\n JOB FAILED for some reason ---- >>>> return to the previous state of git.\n\n\n")
-		log.Info("newJob failed", newJob)
-		result, err := UpdateRepo(gitops)
+		log.Info("JOB FAILED for some reason ---- >>>> return to the previous state of git.")
+		gitopsRepoUpdater := &gitopsv1alpha1.GitOpsConfig{}
+		err := e.client.Get(context.TODO(), util.NN{Name: gitopsName, Namespace: newJob.GetNamespace()}, gitopsRepoUpdater)
+		if err != nil {
+			log.Error(err, "cannot get GitOpsConfig")
+			return
+		}
+		result, err := updateRepo(gitopsRepoUpdater, e.client)
 
 		if err == nil {
 			log.Info("Due to error")
